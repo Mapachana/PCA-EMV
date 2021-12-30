@@ -1,0 +1,540 @@
+---
+title: "Plantilla para el análisis exploratorio unidimensional"
+author: 
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r,include=FALSE}
+# install.packages("EnvStats")
+library(EnvStats)
+library(car)
+library(foreign)
+
+```
+
+***
+
+\begin{center}
+ \tableofcontents
+ \textsc{--}\\
+\end{center}
+
+
+
+***
+\section{Información sobre el Dataset}
+
+
+El fichero de datos DB_1.sav contiene, entre otras, las variables znac_def, zmortinf, zfertil, zinc_pob, ztasa_na, zurbana, zalfabet, zcaloria, zlog_pib, zpib_cap, zpoblac, zdensida, que son las variables estandarizadas de las originales de igual denominación sin la z inicial, y que respectivamente son los valores para cada país del mundo de:
+
+## Variables
+
+• Tasa Nacimientos/Defunciones (nac_def).
+
+• Mortalidad infantil: muertes por 1000 nacimientos vivos (mortinf).
+
+• Fertilidad: numero promedio de hijos (fertil).
+
+• Aumento de la poblacion en % anual (inc_pob).
+
+• Tasa de natalidad por 1.000 habitantes (tasa_na).
+
+• Habitantes en ciudades en % (urbana).
+
+• Personas Alfabetizadas en % (alfabet).
+
+• Ingesta diaria de calorias (calorias).
+
+• Log(10) de PIB_CAP (log_pib).
+
+• Producto interior bruto per-capita (pib_cap).
+
+• Poblacion en miles (poblac).
+
+• Habitantes por Km2 (densidad).
+
+\subsection{Otra información de interés}
+  
+El dataset contiene un total de 48 variables, listadas anteriormente solamente están 15 (de la 32 a la 46) de estas, concretamente son las variables estandarizadas.
+
+\section{Primer acercamiento}
+
+Cargamos los datos a partir del fichero *DB_1.sav*.
+```{r,echo=F,include=F}
+getwd()
+
+
+datos_enteros<-read.spss("DB_1.sav", to.data.frame = TRUE)
+#Cogemos las variables de interes
+datos<-datos_enteros[,32:46]
+```
+
+\subsection{Primera visualización}
+
+Echamos un primer vistazo a los datos, observando directamente el dataframe en el que vienen, para ver si los datos efectivamente están estandarizados (datos numéricos, continuos, tanto negativos como positivos y entorno al 0), y para comprobar la existencia de *NA*s.
+```{r,echo=F}
+head(datos)
+```
+
+Vemos tanto la existencia de valores perdidos, y que las variables efectivamente están estandarizadas.
+
+\subsection{Tratamiento de los *NA*}
+
+Vamos a ver si hay, donde, y cuantos *NA* hay en los datos
+```{r,echo=F}
+cbind(apply(is.na(datos),2,sum),apply(is.na(datos),2,sum)/dim(datos)[1])
+```
+
+Vemos que apenas hay variables con datos faltantes, pero una de las variables (*zcalorías*) tiene un casi un tercio de sus registros faltantes, vamos a tratar este caso con mas atención.
+
+```{r,echo=F}
+faltantes<-which(is.na(datos$zcaloría))
+cor(datos[-faltantes,],use="complete.obs")[,"zcaloría"]
+```
+
+Vemos que la variable que mejor se correlaciona con *zcalorías* es *zlog_pib*, de modo que vamos a hacer una prueba de homogeneidad de medias entre las dos poblaciones para discernir si los datos faltantes siguen un patrón no aleatorio
+
+```{r,echo=F}
+t.test(datos$zlog_pib[faltantes],datos$zlog_pib[-faltantes])
+```
+
+Tenemos una diferencia significativa entre las medias de ambas muestras, de modo que vamos a ver si esta diferencia se debe a outliers.
+
+```{r,echo=F}
+par(mfrow=c(2,2),mar=c(1,1,1,1))
+boxplot(datos$zlog_pib[faltantes],col="darkblue")
+boxplot(datos$zlog_pib[-faltantes],col="darkblue")
+hist(datos$zlog_pib[faltantes],main="Grupo faltante",col="darkblue")
+hist(datos$zlog_pib[-faltantes],main="Grupo no faltante",col="darkblue")
+```
+
+Como las distribuciones en los histogramas no son tan difernetes, y la media está muy condicionada por ese "gran bulto" que hay al rededor del 1, vamos a probar con la variable *zespvida*
+
+```{r,echo=F}
+t.test(datos$zespvida[faltantes],datos$zespvida[-faltantes])
+```
+
+```{r,echo=F}
+par(mfrow=c(2,2),mar=c(1,1,1,1))
+boxplot(datos$zespvida[faltantes],col="darkblue")
+boxplot(datos$zespvida[-faltantes],col="darkblue")
+hist(datos$zespvida[faltantes],main="Grupo faltante",col="darkblue")
+hist(datos$zespvida[-faltantes],main="Grupo no faltante",col="darkblue")
+```
+
+La situación es identifica a lo sucedido con *zlog_pib*, los faltantes tienen un mayor valor, y existe diferencia significativa entre las medias, de modo que deducimos que la ausencia de datos no es aleatoria.
+
+Como se ha hablado en clase, se sustituirán los *NA*, con el debido aviso
+
+El resto de variables con *NA* no tienen una cantidad a tener en cuenta (inferior al $5\%$).
+
+Como se ha especificado, se intercambiarán los valores perdidos por la media (tan solo tenemos variables cuantitativas).
+
+```{r,echo=F}
+not_available<-function(data,na.rm=F){
+  data[is.na(data)]<-mean(data,na.rm=T)
+  data
+}
+
+datos_pca<-as.data.frame(apply(datos, 2, not_available))
+```
+
+## Recodificación
+
+En este caso no es necesaria.
+
+# Exploración Univariante
+
+## Exploración descriptiva
+
+En este apartado iremos variable por variable obteniendo los resultados de aplicar diferentes medidas descriptivas, clásicas y resistentes, de centralidad, forma y dispersión.
+
+```{r,echo=F}
+#Definimos las medidas resistentes
+PMC<-function(x){ return((as.double(quantile(x,0.25))+as.double(quantile(x,0.75)))/2)}
+
+trimedia<-function(x){return((median(x)+PMC(x))/2)}
+
+centrimedia<-function(x){
+  indices<-(x>quantile(x,0.25)&x<quantile(x,0.75))
+  valores<-x[indices]
+  return(sum(valores)/length(valores))
+}
+
+RIQ<-function(x){return(quantile(x,0.75)-quantile(x,0.25))}
+
+MEDA<-function(x){return(median(abs(x-median(x))))}
+
+CVc<-function(x){return((quantile(x,0.75)-quantile(x,0.25))/(quantile(x,0.75)+quantile(x,0.25)))}
+
+H1<-function(x){return((quantile(x,0.25)+quantile(x,0.75)-2*median(x))/(2*median(x)))}
+H2<-function(x){return(median(x)-(quantile(x,0.1)+quantile(x,0.9))/(2))}
+H3<-function(x){return(H2(x)/median(x))}
+
+#Creamos una función que aplique todas estas medidas
+
+descriptivo<-function(x){
+  
+  temp<-rbind(PMC(x),trimedia(x),centrimedia(x))
+  rownames(temp)<-c("PMC","Trimedia","Centrimedia")
+  centralidad<-list(clasica=list(media=mean(x)),resistente=temp)
+  
+  temp<-rbind(RIQ(x),MEDA(x),CVc(x))
+  rownames(temp)<-c("Rango Inter-Cuartílico","MEDA","CVc")
+  dispersion<-list(clasica=list(desviación_típica=sd(x),Coef_varización=sd(x)/mean(x),rango=range(x)),resistente=temp)
+  
+  temp<-rbind(H1(x),H2(x),H3(x))
+  rownames(temp)<-c("Asimetría de Yule","Asimetría de Kelly","Asimetría de Kelly adimensional")
+  forma<-list(clasica=list(skewness=skewness(x),kurtosis=kurtosis(x)),resistente=temp)
+  cat(names(x))
+  return(list(centralidad=centralidad,dispersion=dispersion,forma=forma))
+}
+```
+
+Aplicamos la función para cada una de las variables:
+
+\newpage
+
+**znac_def**
+```{r,echo=F}
+descriptivo(datos_pca[,1])
+hist(col="darkblue",datos_pca[,1],main="Defunciones")
+```
+
+Las medidas resistentes de centralidad están ligeramente desplazadas hacia la izquierda. Esto sumado al rango, indica un amontonamiento de los valores en una región relativamente pequeña a la izquierda del $0$. Tenemos un valor del *MEDA* bastante inferior al de la desviación típica. En los estimadores de simetría, obtenemos que existe cierta asimetría, y el valor de *kurtosis* indica una gran acumulación de los datos.
+
+Todas estas conclusiones se pueden corroborar en el histograma, donde además se puede apreciar el valor outlier que ha provocado la diferencia entre las medidas clásicas y las resistentes.
+
+\newpage
+**zmortinf**
+
+```{r,echo=F}
+descriptivo(datos_pca[,2])
+hist(col="darkblue",datos_pca[,2],main="Mortalidad infantil")
+```
+
+Se observa en este caso un fenómeno parecido, pero con un *kurtosis* que indica un menor amontonamiento, y un rango bastante inferior, y una asimetría mas pronunciada.
+
+En el histograma observamos que la distribuían está mas aplanada que la anterior, pero su forma efectivamente es mas asimétrica
+
+\newpage
+
+**zfertil**  
+
+```{r,echo=F}
+descriptivo(datos_pca[,3])
+hist(col="darkblue",datos_pca[,3],main="Fertilidad")
+```
+
+En esta ocasión obtenemos medidas dispares en los estimadores de centralidad resistentes (aunque siguen estando desplazados hacia la izquierda). Obtenemos un *MEDA* mayor que en los casos anteriores, y los estimadores de formas denotan una distribución mas simétrica, pero muy aplanada.
+
+En el histograma se puede observar que lo anterior, es debido a que se tienen dos montículos de datos.
+
+\newpage
+
+**zinc_pob** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,4])
+hist(col="darkblue",datos_pca[,4],main="Población")
+```
+
+Esta distribución está considerablemente mas centrada que las anteriores, el *MEDA* se acerca bastante a la desviación típica, los estimadores de asimetría detecta una leve desviación, y un *kurtosis* que declara una distribución aplanada.
+
+Una vez visto el histograma, se podría pensar que es una distribción normal un poco pocha, pero viendo las anteriores variables, parece algo sistemático en este dataset el desplazamiento hacia la derecha.
+
+\newpage
+
+**ztasa_na** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,5])
+hist(col="darkblue",datos_pca[,5],main="Natalidad")
+```
+
+De nuevo, parece estar mas centralizada que sus compañeras, al igual que el *MEDA* se acerca a 1, y con unos valores no muy exagerados para los estadísticos de forma (a excepción de un *Kurtosis* muy poco pronunciado).
+
+Vemos, coherente con el valo de *Kurtosis*, que la distribución está bastante aplanada, casi uniforme ligeramente descendente.
+
+\newpage
+
+**zurbana**  
+
+```{r,echo=F}
+descriptivo(datos_pca[,6])
+hist(col="darkblue",datos_pca[,6],main="Habitantes en ciudades")
+```
+
+En este caso las medidas resistentes de centralidad están desplazadas ligeramente a la derecha, pero nada realmente significativo. El rango es bastante mayor al de otras variables, y se extiende mas hacia la izquierda que el resto de variables.
+
+Acorde con lo poco notables que eran los valores de las medidas de forma, vemos que esta es la distribución que mas se acerca a una normal.
+
+\newpage
+
+**zespvida** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,7])
+hist(col="darkblue",datos_pca[,7],main="Esperanza de vida")
+```
+
+Las medidas de centralidad están desplazadas hacia la derecha, el papel de los rangos se ha intercambiado con respecto al de las anteriores variables. A pesar de lo grande que del rango, el *MEDA* apenas es de $0.473$. Se denota también una fuerte asimetría hacia la izquierda.
+
+En el histograma vemos una forma bastante anormal para ser una distribución estandarizada.
+
+\newpage
+
+**zalfabet** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,8])
+hist(col="darkblue",datos_pca[,8],main="Alfabetización")
+```
+
+Los valores de centralidad salen bastante desplazados hacia la derecha. Se denota también una fuerte asimetría hacia la izquierda.
+
+En el histograma se observa un fuerte comportamiento anómalo de la distribución.
+
+\newpage
+
+**zcaloría** (variable con conclusiones sesgadas)
+
+```{r,echo=F}
+descriptivo(datos_pca[,9])
+hist(col="darkblue",datos_pca[,9],main="Ingesta diaria de calorías")
+```
+
+La propia desviación típica (supuesta 1 para variables estandarizadas) se ha visto fuertemente influenciada por la cantidad de valores que se han sustituido por la media. Aun así, el rango es el mas normal observado. Los coeficientes de formas adimensionales dan valores irreales, posiblemente causado por la correncción en los datos.
+
+En el histograma se puede ver como efectivamente casi un tercio de los datos se cambiaron por la media.
+
+\newpage
+
+**zlog_pib**
+
+```{r,echo=F}
+descriptivo(datos_pca[,10])
+hist(col="darkblue",datos_pca[,10],main="PIB")
+```
+
+Para esta variable tenemos valores bastante estandar, a excepción de un *CVc* anormalmente grande, y una *kurtosis* que indica una distribución bastante aplanada.
+
+Vemos en el histograma como efectuvamente es una distribución plana, pero que podría se una normal un tanto pocha.
+
+\newpage
+
+**zpib_cap** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,11])
+hist(col="darkblue",datos_pca[,11],main="PIB per capita")
+```
+
+Tenemos medidas de centralidad desplazadas hacia la izquierda, volvemos a los rangos desplazados hacia a derecha, un rango intercuartílico ligeramente inferior a los vistos anteriormente, y fuertes desviaciones de la simetría.
+
+El histograma de nuevo es de una distribución que se aleja bastante de una normal.
+
+\newpage
+
+**zpoblac**  
+
+```{r,echo=F}
+descriptivo(datos_pca[,12])
+hist(col="darkblue",datos_pca[,12],main="Población")
+```
+
+El valor medio resistente está ligeramente desplazado hacia la izquierda. Tenemos un rango intercuartílico muy anormalmente pequeño, al igual que el *MEDA*. Las diferencias entre los valores de los estadísticos de forma clasicos y resistentes indican una fuerte presencia de valores outliers.
+
+Como se puede apreciar en el histograma, lo anterior es causado por unos valores outliers exagerados, las conclusiones para esta variable son inútiles teniendo en cuenta que los datos han pasado por una estandarización, pues esos valores outliers han condicionado la forma de toda la distribución (pues la estandarización fuerza la media y la varianza, es por eso que la inmensa mayoria de la variabilidad se ha ido para representar dichos outliers, y casi toda la distribución está a la izquierda para conseguir que la media sea $0$)
+
+\newpage
+
+**zdensida** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,13])
+hist(col="darkblue",datos_pca[,13],main="Densidad de población")
+```
+
+Sucede lo mismo que con la variable anterior.
+
+**zlog_pob** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,14])
+hist(col="darkblue",datos_pca[,14],main="Logaritmo de la población")
+```
+
+A excepción del coeficiente de asimetría de Yule, todos los valores son bastante acordes con una normal.
+
+Parece acorde con una normal, a excepión del largo que tiene.
+
+\newpage
+
+**zlogden** 
+
+```{r,echo=F}
+descriptivo(datos_pca[,15])
+hist(col="darkblue",datos_pca[,15],main="Logaritmo densidad")
+```
+
+A excepción del *CVc* mas elevado que se ha visto, los valores son bastante normales.
+
+El histograma denota una distribución bastante normal, a excepción de dos mini montículos en los extremos.
+
+**NOTAR**: el hecho de que algunas de las variables estén desplazadas hacia la derecha, o que los outliers sean en esta dirección, es debido a que estas son estandarizaciones de variables positivas, en una variable positiva el valor mas extremo inferior como mucho es $0$.
+
+Las que si tienen extensión hacia la izquierda, es debido a que no hay un gran porcentaje de la población que se acerque al extremo inferior, entonces el $0$ realmente si acaba siendo un valor "extremo" para estas variables.
+
+También notar que el *CVc* toma valores bastante "sin sentido" debido a que esta medida no tiene mucho sentido en variables que toman valores positivos y negativos, en el caso de la variable 15 ese valor es devido a que $Q_1 \approx -Q_3$
+
+**TAMBIEN**: aunque en los comentarios, hago continuas referencias a las variables anteriormente analizadas, es para crear un marco de referencia dentro del dataset, no para comparar unas variables con otras.
+
+## Exploración Gráfica
+
+Procedemos con los diagramas de cajas y bigotes, para una detección primaria de outliers univariantes.
+
+```{r,echo=F}
+colfunc<-colorRampPalette(c("darkblue","lightblue"))
+boxplot(datos_pca,
+        xlab=NULL,
+        ylab="Nombre-y",
+        col=colfunc(15),
+        las=2)
+```
+
+Se puede observar que la mayoría de gráficos se asemejan en cierto modo a una normal, con los 5 primeros estando ligeramente desplazados, los 15 14 y  9 10 siendo los que mas normales aparentan ser, y con 13 y 12 (*zpoblac* y *zdensidad*) con una gran concentración al 0, y una gran cantidad de outliers en la cola superior
+
+(El tratamiento que tendremos con estos valores outliers será el mismo que en la práctica anterior, aunque en lo personal, no creo que sea buena idea eliminar los outliers de las variables *zpoblac* y *zdensidad*; me explico: 
+
+Cuando consideramos que un valor es un outlier, es por que suponemos que no es representativo de la población para el tamaño de muestra que tenemos; en este caso, los outliers los estamos considerando en base a un diagrama boxplot, este indica valores outliers basándose en la hipótesis de estar en una distribución normal, en el caso de *zpoblac* y *zdensidad*, es claro que no proviene de una normal, luego este "análisis outlier" no es valido **directamente a estas variables**, para el resto se podría "pasar la mano" o hacer contrastes de normalidad.)
+
+A continuación vamos a observar (de nuevo) la forma de las distribuciones de las variables mediante sus histogramas
+
+```{r,echo=F}
+par(mar=c(1,1,1,1))
+par(mfrow=c(3,5))
+invisible(apply(datos_pca, 2,function(x){hist(x,main=NULL,col="darkblue",xlab=NULL,ylab=NULL)}))
+
+```
+
+Observamos que realmente pocas de las variables realmente se podrían considerar normales (la 1 y 7 por los pelos, la 6, 9, 14 y 15), pero como no son casos tan extremos como 12 y 13, se eliminarán los outliers de todas menos de estas dos.
+
+### Tratamiento de outliers
+
+Los valores outlier comentados anteriormente (según si el diagrama boxplot los consideraba outliers o no, y contando con las excepciones comentadas) serán intercambiados por la media. 
+
+```{r,echo=F}
+outlier<-function(data,na.rm=T){
+  H<-1.5*IQR(data)
+  
+  if(any(data<=(quantile(data,0.25,na.rm = T)-H))){
+    data[data<=quantile(data,0.25,na.rm = T)-H]<-NA
+    data[is.na(data)]<-mean(data,na.rm=T)
+    data<-outlier(data)}
+  
+  if(any(data>=(quantile(data,0.75, na.rm = T)+H))){
+    data[data>=quantile(data,0.75, na.rm = T)+H]<-NA
+    data[is.na(data)]<-mean(data,na.rm=T)
+    data<-outlier(data)
+  }
+  return(data)
+}
+
+datos_pca[,-12:-13]<-apply(datos_pca[,-12:-13], 2, outlier)
+```
+
+Una vez tratados los outliers, vemos de nuevo los gráficos boxplot.
+
+```{r,echo=F}
+boxplot(datos_pca,
+        xlab=NULL,
+        ylab="Nombre-y",
+        col=colfunc(15),
+        las=2)
+```
+ 
+Efectivamente, hemos perdido dichos valores anómalos.
+
+\newpage
+
+### Normalidad
+
+Para poder aplicar ciertas técnicas estadísticas, es importante saber si estamos tratando con variables normales, para ello usaremos el método gráfico *qq-plot*.
+
+```{r,echo=F}
+par(mar=c(1,1,1,1))
+par(mfrow=c(3,5))
+invisible(apply(datos_pca, 2, function(x){
+  qqnorm(x,main=NULL)
+  abline(a=0,b=1,col="red")
+}))
+```
+
+Vemos como las variables que mas se acercan a la normalidad son la 4, 6, la 10, la 14 y la 15. No tan cerca están las variables 1, 2, 3, 5, 7, 8, 11, y con desviaciones totales encontramos las variables 12 y 13 (estas desviaciones pueden estar debidas a sus numerosos valores outliers no tratados). 
+
+En este caso no tomaremos medidas para obtener normalidad en los datos.
+
+\newpage
+
+
+### Homocedasticidad
+
+La homocedasticidad se debe comparar dentro de una misma variable, para dos o mas grupos diferenciados; en el caso de este dataset, podemos comprobar si existe homocedasticidad entre los grupos definidos por la religión Católica y Musulmana (los dos grupos mas frecuentes, puesto que de los otros hay tan pocos que podrían dar conclusiones equivocadas) que profesa cada país.
+
+```{r,echo=F}
+ind<-which(datos_enteros$relig=="Musulma."|datos_enteros$relig=="Católica")
+factores<-datos_enteros$relig[ind]
+#Como se han eliminado los valores outlier, usamos con centro la media en vez de la mediana
+#H0:homocedasticidad
+apply(datos_pca[ind,], 2, function(x){
+  if(leveneTest(x,as.factor(factores),center=mean)$"Pr(>F)"[1]>0.05){
+    "Existe homocedasticidad entre los grupos"
+  }
+  else{"No existe homocedasticidad entre los grupos"}
+  })
+```
+
+Vemos como para la mayoría de variables, seccionando los paises según religión, se tiene la misma varianza. Donde no se cumple es para el índice de **alfabetización**, **Calorías**, **Log-PIB**, **Densidad de población** y **Log-densidad de población**  (podría deberse a que muchos paises musulmanes se encuentran en el continente Africano, donde de por si muchas de esas variables son significativamente diferentes al resto del mundo.). 
+
+\newpage
+
+## Exploración Descriptiva
+    
+A continuación vamos a sacar los principales estadísticos descriptivos ahora que tenemos los datos transformados.
+
+**Originales**
+```{r,echo=F}
+summary(datos)
+```
+
+**Tratados**
+```{r,echo=F}
+summary(datos_pca)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
