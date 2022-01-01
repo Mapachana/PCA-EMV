@@ -314,11 +314,9 @@ boxplot(datos_pca,
         las=2)
 ```
 
-Se puede observar que la mayoría de gráficos se asemejan en cierto modo a una normal, con los 5 primeros estando ligeramente desplazados, los 15 14 y  9 10 siendo los que mas normales aparentan ser, y con 13 y 12 (*zpoblac* y *zdensidad*) con una gran concentración al 0, y una gran cantidad de outliers en la cola superior
+Se puede observar que la mayoría de gráficos se asemejan en cierto modo a una normal,estando todos ligeramente desplazados, y destacando que POBDENS y ZTEJERCI tienen una mayor concentración de valores. La mayoría de outliers se encuentran en ZTEJERCI como cola superior.
 
-(El tratamiento que tendremos con estos valores outliers será el mismo que en la práctica anterior, aunque en lo personal, no creo que sea buena idea eliminar los outliers de las variables *zpoblac* y *zdensidad*; me explico: 
-
-Cuando consideramos que un valor es un outlier, es por que suponemos que no es representativo de la población para el tamaño de muestra que tenemos; en este caso, los outliers los estamos considerando en base a un diagrama boxplot, este indica valores outliers basándose en la hipótesis de estar en una distribución normal, en el caso de *zpoblac* y *zdensidad*, es claro que no proviene de una normal, luego este "análisis outlier" no es valido **directamente a estas variables**, para el resto se podría "pasar la mano" o hacer contrastes de normalidad.)
+Pese a que algunas de las distribuciones de las variables que presentan outliers no se parecen demasiado a una normal, se ha tomado la decisión de eliminarlos, a pesar de que pueda no ser lo más correcto, ya que boxplot asume que la distribución es normal y en algunos casos esto parece dudoso.
 
 A continuación vamos a observar (de nuevo) la forma de las distribuciones de las variables mediante sus histogramas
 
@@ -329,11 +327,11 @@ invisible(apply(datos_pca, 2,function(x){hist(x,main=NULL,col="darkblue",xlab=NU
 
 ```
 
-Observamos que realmente pocas de las variables realmente se podrían considerar normales (la 1 y 7 por los pelos, la 6, 9, 14 y 15), pero como no son casos tan extremos como 12 y 13, se eliminarán los outliers de todas menos de estas dos.
+Observamos que realmente pocas de las variables realmente se podrían considerar normales con los datos que tenemos, pero son muy pocos, por lo que quizá al recoger una muestra mayor de observaciones se podrían sacar mejores conclusiones sobre las distribuciones de las variables.
 
 ### Tratamiento de outliers
 
-Los valores outlier comentados anteriormente (según si el diagrama boxplot los consideraba outliers o no, y contando con las excepciones comentadas) serán intercambiados por la media. 
+Los valores outlier comentados anteriormente (según si el diagrama boxplot los consideraba outliers o no) serán intercambiados por la media. 
 
 ```{r,echo=F}
 outlier<-function(data,na.rm=T){
@@ -365,7 +363,7 @@ boxplot(datos_pca,
         las=2)
 ```
  
-Efectivamente, hemos perdido dichos valores anómalos.
+Así comprobamos que hemos eliminado los outliers.
 
 \newpage
 
@@ -382,7 +380,7 @@ invisible(apply(datos_pca, 2, function(x){
 }))
 ```
 
-Vemos como las variables que mas se acercan a la normalidad son la 4, 6, la 10, la 14 y la 15. No tan cerca están las variables 1, 2, 3, 5, 7, 8, 11, y con desviaciones totales encontramos las variables 12 y 13 (estas desviaciones pueden estar debidas a sus numerosos valores outliers no tratados). 
+Vemos como casi todas las variables salvo la novena se ajustan bastante bien a la normalidad, siendo las cuarta y décima las que mejor se acercan a ella.
 
 En este caso no tomaremos medidas para obtener normalidad en los datos.
 
@@ -390,6 +388,8 @@ En este caso no tomaremos medidas para obtener normalidad en los datos.
 
 
 ### Homocedasticidad
+
+PREGUNTAR QUE HAGO YO CON ESTOOOOOOO
 
 La homocedasticidad se debe comparar dentro de una misma variable, para dos o mas grupos diferenciados; en el caso de este dataset, podemos comprobar si existe homocedasticidad entre los grupos definidos por la religión Católica y Musulmana (los dos grupos mas frecuentes, puesto que de los otros hay tan pocos que podrían dar conclusiones equivocadas) que profesa cada país.
 
