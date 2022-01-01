@@ -27,37 +27,33 @@ library(foreign)
 \section{Información sobre el Dataset}
 
 
-El fichero de datos DB_1.sav contiene, entre otras, las variables znac_def, zmortinf, zfertil, zinc_pob, ztasa_na, zurbana, zalfabet, zcaloria, zlog_pib, zpib_cap, zpoblac, zdensida, que son las variables estandarizadas de las originales de igual denominación sin la z inicial, y que respectivamente son los valores para cada país del mundo de:
+El fichero de datos DB_3.sav contiene las variables ZTLIBROP, ZTEJERCI, ZTPOBACT, ZTENERGI, ZPSERVI, ZPAGRICU, ZTMEDICO, ZESPVIDA, ZTMINFAN y ZPOBDENS que respectivamente son los valores para cada país del mundo de:
 
 ## Variables
 
-• Tasa Nacimientos/Defunciones (nac_def).
+• Número de libros publicados (ZTLIBROP).
 
-• Mortalidad infantil: muertes por 1000 nacimientos vivos (mortinf).
+• Cociente entre número de individuos en ejército de tierra y población total del estado (ZTEJERCI).
 
-• Fertilidad: numero promedio de hijos (fertil).
+• Cociente entre población activa y total (ZTPOBACT).
 
-• Aumento de la poblacion en % anual (inc_pob).
+• Tasa de consumo energético (ZTENERGI).
 
-• Tasa de natalidad por 1.000 habitantes (tasa_na).
+• Población del sector servicios (ZPSERVI).
 
-• Habitantes en ciudades en % (urbana).
+• Población del sector agrícola (ZPAGRICU).
 
-• Personas Alfabetizadas en % (alfabet).
+• Tasa de médicos por habitante (ZTMEDICO).
 
-• Ingesta diaria de calorias (calorias).
+• Esperanza de vida (ZESPVIDA).
 
-• Log(10) de PIB_CAP (log_pib).
+• Tasa de mortalidad infantil (ZTMINFAN).
 
-• Producto interior bruto per-capita (pib_cap).
-
-• Poblacion en miles (poblac).
-
-• Habitantes por Km2 (densidad).
+• Densidad de población (ZPOBDENS).
 
 \subsection{Otra información de interés}
   
-El dataset contiene un total de 12 variables.
+El dataset contiene un total de 34 instancias con 12 variables, contando con la etiqueta del país al que corresponde las 11 variables mencionadas anteriormente.
 
 \section{Primer acercamiento}
 
@@ -77,7 +73,7 @@ Echamos un primer vistazo a los datos, observando directamente el dataframe en e
 head(datos)
 ```
 
-Vemos tanto la existencia de valores perdidos, y que las variables efectivamente están estandarizadas.
+Vemos tanto la existencia de valores perdidos, y que las variables efectivamente están estandarizadas, ya que variables que intuitivamente tomarían valores enteros y relativamente altos como la esperanza de vida o los libros publicados contienen decimales, valores positivos y negativos y todos se encuentran cercanos a 0.
 
 \subsection{Tratamiento de los *NA*}
 
@@ -86,20 +82,7 @@ Vamos a ver si hay, donde, y cuantos *NA* hay en los datos
 cbind(apply(is.na(datos),2,sum),apply(is.na(datos),2,sum)/dim(datos)[1])
 ```
 
-Vemos que apenas hay variables con datos faltantes, pero una de las variables (*ZTLIBROP*) tiene uno de sus registros faltantes, vamos a tratar este caso con mas atención.
-
-```{r,echo=F}
-faltantes<-which(is.na(datos$ZTLIBROP))
-cor(datos[-faltantes,],use="complete.obs")[,"ZTLIBROP"]
-```
-
-Vemos que la variable que mejor se correlaciona con *ZTLIBROP* es *ZESPVIDA*, de modo que vamos a hacer una prueba de homogeneidad de medias entre las dos poblaciones para discernir si los datos faltantes siguen un patrón no aleatorio
-
-Como se ha hablado en clase, se sustituirán los *NA*, con el debido aviso
-
-El resto de variables con *NA* no tienen una cantidad a tener en cuenta (inferior al $5\%$).
-
-Como se ha especificado, se intercambiarán los valores perdidos por la media (tan solo tenemos variables cuantitativas).
+Vemos que apenas hay variables con datos faltantes, pero una de las variables (*ZTLIBROP*) tiene uno de sus registros faltantes. Como, al ser un único valor perdido en un conjunto de datos con 34 instancias es claro que tenemos menos del 5% de valores perdidos, podemos imputarlo con el valor de la media (ya que es una variable cuantitativa) sin que afecte significamente al resultado del análisis.
 
 ```{r,echo=F}
 not_available<-function(data,na.rm=F){
@@ -109,6 +92,14 @@ not_available<-function(data,na.rm=F){
 
 datos_pca<-as.data.frame(apply(datos, 2, not_available))
 ```
+
+Comprobamos ahora que se ha imputado correctamente el valor perdido:
+
+```{r,echo=F}
+cbind(apply(is.na(datos_pca),2,sum),apply(is.na(datos_pca),2,sum)/dim(datos_pca)[1])
+```
+
+En efecto se ha realizado la imputación de valores perdidos sin ningún problema.
 
 ## Recodificación
 
@@ -166,200 +157,149 @@ Aplicamos la función para cada una de las variables:
 
 \newpage
 
-**znac_def**
+**ZPOBDENS**
 ```{r,echo=F}
 descriptivo(datos_pca[,1])
 hist(col="darkblue",datos_pca[,1],main="ZPOBDENS")
 ```
 
-Las medidas resistentes de centralidad están ligeramente desplazadas hacia la izquierda. Esto sumado al rango, indica un amontonamiento de los valores en una región relativamente pequeña a la izquierda del $0$. Tenemos un valor del *MEDA* bastante inferior al de la desviación típica. En los estimadores de simetría, obtenemos que existe cierta asimetría, y el valor de *kurtosis* indica una gran acumulación de los datos.
-
-Todas estas conclusiones se pueden corroborar en el histograma, donde además se puede apreciar el valor outlier que ha provocado la diferencia entre las medidas clásicas y las resistentes.
+Las medidas resistentes de centralidad están ligeramente desplazadas hacia la izquierda. Tenemos un valor del *MEDA* inferior al de la desviación típica. En los estimadores de simetría, obtenemos que existe cierta asimetría, y el valor de *kurtosis* indica una acumulación de los datos.
 
 \newpage
-**zmortinf**
+**ZMINFAN**
 
 ```{r,echo=F}
 descriptivo(datos_pca[,2])
-hist(col="darkblue",datos_pca[,2],main="Mortalidad infantil")
+hist(col="darkblue",datos_pca[,2],main="ZMINFAN")
 ```
 
-Se observa en este caso un fenómeno parecido, pero con un *kurtosis* que indica un menor amontonamiento, y un rango bastante inferior, y una asimetría mas pronunciada.
+Lo primero que llama la atención en el histograma es que a prmera vista parecen dos normales pegadas, pero esto puede deberse a que tenemos muy pocos datos en el conjunto a estudiar y sea una normal con una cola larga.
 
-En el histograma observamos que la distribuían está mas aplanada que la anterior, pero su forma efectivamente es mas asimétrica
+La media se encuentra ligeramente desviada a la izquierda, y de nuevo la MEDA es menor que la desviación típica.
+
+Vemos en el coeficiente de curtosis que la distribución es muy aplanada y asimetría, lo que se corresponde con el histograma.
 
 \newpage
 
-**zfertil**  
+**ZESPVIDA**  
 
 ```{r,echo=F}
 descriptivo(datos_pca[,3])
-hist(col="darkblue",datos_pca[,3],main="Fertilidad")
+hist(col="darkblue",datos_pca[,3],main="ZESPVIDA")
 ```
 
-En esta ocasión obtenemos medidas dispares en los estimadores de centralidad resistentes (aunque siguen estando desplazados hacia la izquierda). Obtenemos un *MEDA* mayor que en los casos anteriores, y los estimadores de formas denotan una distribución mas simétrica, pero muy aplanada.
-
-En el histograma se puede observar que lo anterior, es debido a que se tienen dos montículos de datos.
+Las medidas de centralidad se encuentran desplazadas a la derecha, y la MEDA vuelve a ser menor que la desviación típica. De nuevo mirando el coeficiente de curtosis vemos una distribución bastante aplanada y con asimetría.
 
 \newpage
 
-**zinc_pob** 
+**ZPOBURB** 
 
 ```{r,echo=F}
 descriptivo(datos_pca[,4])
-hist(col="darkblue",datos_pca[,4],main="Población")
+hist(col="darkblue",datos_pca[,4],main="ZPOBURB")
 ```
+Esta distribución parece bastante plana mirando el histograma, ningún valor parece predominar demasiado sobre los otros, pero de nuevo se necesitarían más datos para confirmar.
+ 
+La media y medidas de centralidad están muy cercanas a 0 y la curtosis indica que la distribución es bastante plana.
 
-Esta distribución está considerablemente mas centrada que las anteriores, el *MEDA* se acerca bastante a la desviación típica, los estimadores de asimetría detecta una leve desviación, y un *kurtosis* que declara una distribución aplanada.
-
-Una vez visto el histograma, se podría pensar que es una distribción normal un poco pocha, pero viendo las anteriores variables, parece algo sistemático en este dataset el desplazamiento hacia la derecha.
 
 \newpage
 
-**ztasa_na** 
+**ZTMEDICO** 
 
 ```{r,echo=F}
 descriptivo(datos_pca[,5])
-hist(col="darkblue",datos_pca[,5],main="Natalidad")
+hist(col="darkblue",datos_pca[,5],main="ZTMEDICO")
 ```
 
-De nuevo, parece estar mas centralizada que sus compañeras, al igual que el *MEDA* se acerca a 1, y con unos valores no muy exagerados para los estadísticos de forma (a excepción de un *Kurtosis* muy poco pronunciado).
+Las medidas de centralidad se encuentran desplazadas hacia la izquierda y el CVc tiene un valor muy bajo. La curtosis indica que la distribución es plana
 
-Vemos, coherente con el valo de *Kurtosis*, que la distribución está bastante aplanada, casi uniforme ligeramente descendente.
+También llama la atención como las dos primeras columnas son muy altas y a partir de ellas el resto del histograma se asemeja más a una normal.
+
 
 \newpage
 
-**zurbana**  
+**ZPAGRICU**  
 
 ```{r,echo=F}
 descriptivo(datos_pca[,6])
-hist(col="darkblue",datos_pca[,6],main="Habitantes en ciudades")
+hist(col="darkblue",datos_pca[,6],main="ZPAGRICU")
 ```
 
-En este caso las medidas resistentes de centralidad están desplazadas ligeramente a la derecha, pero nada realmente significativo. El rango es bastante mayor al de otras variables, y se extiende mas hacia la izquierda que el resto de variables.
+En este caso el histograma se asemeja más al de una normal que en las anteriores variables estudiadas, pese a que se aprecia una asimetría y distribución bastante plana.
 
-Acorde con lo poco notables que eran los valores de las medidas de forma, vemos que esta es la distribución que mas se acerca a una normal.
+Las medidas de centralidad están desviadas ligeramente a la izquierda y la curtosis indica que la distribución es bastante plana.
 
 \newpage
 
-**zespvida** 
+**ZPSERVI** 
 
 ```{r,echo=F}
 descriptivo(datos_pca[,7])
-hist(col="darkblue",datos_pca[,7],main="Esperanza de vida")
+hist(col="darkblue",datos_pca[,7],main="ZPSERVI")
 ```
 
-Las medidas de centralidad están desplazadas hacia la derecha, el papel de los rangos se ha intercambiado con respecto al de las anteriores variables. A pesar de lo grande que del rango, el *MEDA* apenas es de $0.473$. Se denota también una fuerte asimetría hacia la izquierda.
+Observamos que las medidas de centralidad están desviadas a la derecha, el MEDA es menor que la desviación típica y la curtosis indica que la distribución es plana.
 
-En el histograma vemos una forma bastante anormal para ser una distribución estandarizada.
+Además, es claro viendo el histograma que la distribución no se asemeja demasiado a la normal, y es posible que la última columna, al tener frecuencia 1, se trae de un outlier.
 
 \newpage
 
-**zalfabet** 
+**ZTLIBROP** 
 
 ```{r,echo=F}
 descriptivo(datos_pca[,8])
-hist(col="darkblue",datos_pca[,8],main="Alfabetización")
+hist(col="darkblue",datos_pca[,8],main="ZTLIBROP")
 ```
 
-Los valores de centralidad salen bastante desplazados hacia la derecha. Se denota también una fuerte asimetría hacia la izquierda.
+De nuevo ne este caso las medidas de centralidad están desviadas a la izquierda, además se denota una fuerte asimetría en la distribución.
 
-En el histograma se observa un fuerte comportamiento anómalo de la distribución.
+También llama la atención como el rango de esta varuiable es mayor hacia la derecha que el de las demás.
 
 \newpage
 
-**zcaloría** (variable con conclusiones sesgadas)
+**ZTEJERCI** (variable con conclusiones sesgadas)
 
 ```{r,echo=F}
 descriptivo(datos_pca[,9])
-hist(col="darkblue",datos_pca[,9],main="Ingesta diaria de calorías")
+hist(col="darkblue",datos_pca[,9],main="ZTEJERCI")
 ```
 
-La propia desviación típica (supuesta 1 para variables estandarizadas) se ha visto fuertemente influenciada por la cantidad de valores que se han sustituido por la media. Aun así, el rango es el mas normal observado. Los coeficientes de formas adimensionales dan valores irreales, posiblemente causado por la correncción en los datos.
 
-En el histograma se puede ver como efectivamente casi un tercio de los datos se cambiaron por la media.
+
+En este caso tenemos unas medidas de centralidad muy desviadas a la izquierda, con una fuerte asimetría y una concentración de datos muy alta en la primera columna.
+
+El rango de esta variable es mucho más amplio que el de todas las demás, y resulta llamativo como los últimos valores de la derecha no tienen una frecuencia alta, haciendo sospechar de que sean outliers.
 
 \newpage
 
-**zlog_pib**
+**ZTPOBACT** 
 
 ```{r,echo=F}
 descriptivo(datos_pca[,10])
-hist(col="darkblue",datos_pca[,10],main="PIB")
+hist(col="darkblue",datos_pca[,10],main="ZTPOBACT")
 ```
 
-Para esta variable tenemos valores bastante estandar, a excepción de un *CVc* anormalmente grande, y una *kurtosis* que indica una distribución bastante aplanada.
+Esta distribución se parece más a una normal que algunas de las estudiadas anteriormente, está más centrada (sus medidas de centralidad son más cercanas a 0) y su curtosis es baja, lo que indica una distribución aplanada.
 
-Vemos en el histograma como efectuvamente es una distribución plana, pero que podría se una normal un tanto pocha.
+Mirando el histograma apreciamos algunos valores cerca de -2 que pueden parecer outliers por su separación con el resto de los valores representados.
 
 \newpage
 
-**zpib_cap** 
+**ZTENERGI**  
 
 ```{r,echo=F}
 descriptivo(datos_pca[,11])
-hist(col="darkblue",datos_pca[,11],main="PIB per capita")
+hist(col="darkblue",datos_pca[,11],main="ZTENERGI")
 ```
 
-Tenemos medidas de centralidad desplazadas hacia la izquierda, volvemos a los rangos desplazados hacia a derecha, un rango intercuartílico ligeramente inferior a los vistos anteriormente, y fuertes desviaciones de la simetría.
-
-El histograma de nuevo es de una distribución que se aleja bastante de una normal.
-
-\newpage
-
-**zpoblac**  
-
-```{r,echo=F}
-descriptivo(datos_pca[,12])
-hist(col="darkblue",datos_pca[,12],main="Población")
-```
-
-El valor medio resistente está ligeramente desplazado hacia la izquierda. Tenemos un rango intercuartílico muy anormalmente pequeño, al igual que el *MEDA*. Las diferencias entre los valores de los estadísticos de forma clasicos y resistentes indican una fuerte presencia de valores outliers.
-
-Como se puede apreciar en el histograma, lo anterior es causado por unos valores outliers exagerados, las conclusiones para esta variable son inútiles teniendo en cuenta que los datos han pasado por una estandarización, pues esos valores outliers han condicionado la forma de toda la distribución (pues la estandarización fuerza la media y la varianza, es por eso que la inmensa mayoria de la variabilidad se ha ido para representar dichos outliers, y casi toda la distribución está a la izquierda para conseguir que la media sea $0$)
-
-\newpage
-
-**zdensida** 
-
-```{r,echo=F}
-descriptivo(datos_pca[,13])
-hist(col="darkblue",datos_pca[,13],main="Densidad de población")
-```
-
-Sucede lo mismo que con la variable anterior.
-
-**zlog_pob** 
-
-```{r,echo=F}
-descriptivo(datos_pca[,14])
-hist(col="darkblue",datos_pca[,14],main="Logaritmo de la población")
-```
-
-A excepción del coeficiente de asimetría de Yule, todos los valores son bastante acordes con una normal.
-
-Parece acorde con una normal, a excepión del largo que tiene.
-
-\newpage
-
-**zlogden** 
-
-```{r,echo=F}
-descriptivo(datos_pca[,15])
-hist(col="darkblue",datos_pca[,15],main="Logaritmo densidad")
-```
-
-A excepción del *CVc* mas elevado que se ha visto, los valores son bastante normales.
-
-El histograma denota una distribución bastante normal, a excepción de dos mini montículos en los extremos.
+Al igual que en uno de los casos anteriores tenemos las medidas de centralidad desviadas a la izquierda, una curtosis bastante alta y un rango de valores amplio, con algunos separados de los demás en los extremos que parecen outliers.
 
 **NOTAR**: el hecho de que algunas de las variables estén desplazadas hacia la derecha, o que los outliers sean en esta dirección, es debido a que estas son estandarizaciones de variables positivas, en una variable positiva el valor mas extremo inferior como mucho es $0$.
 
 Las que si tienen extensión hacia la izquierda, es debido a que no hay un gran porcentaje de la población que se acerque al extremo inferior, entonces el $0$ realmente si acaba siendo un valor "extremo" para estas variables.
 
 También notar que el *CVc* toma valores bastante "sin sentido" debido a que esta medida no tiene mucho sentido en variables que toman valores positivos y negativos, en el caso de la variable 15 ese valor es devido a que $Q_1 \approx -Q_3$
-
-**TAMBIEN**: aunque en los comentarios, hago continuas referencias a las variables anteriormente analizadas, es para crear un marco de referencia dentro del dataset, no para comparar unas variables con otras.
 
 ## Exploración Gráfica
 
