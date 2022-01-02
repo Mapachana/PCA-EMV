@@ -51,6 +51,9 @@ El fichero de datos DB_3.sav contiene las variables ZTLIBROP, ZTEJERCI, ZTPOBACT
 
 • Densidad de población (ZPOBDENS).
 
+• Porcentaje de la población urbana (POBURB).
+
+
 \subsection{Otra información de interés}
   
 El dataset contiene un total de 34 instancias con 12 variables, contando con la etiqueta del país al que corresponde las 11 variables mencionadas anteriormente.
@@ -423,6 +426,12 @@ summary(datos)
 ```{r,echo=F}
 summary(datos_pca)
 ```
+
+\section{Análisis exploratorio multivariante}
+
+\subsection{Estudiando los datos}
+
+# Supuestos de correlación
 
 
 
