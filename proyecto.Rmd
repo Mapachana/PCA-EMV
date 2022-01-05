@@ -433,9 +433,163 @@ summary(datos_pca)
 
 # Supuestos de correlación
 
+Comenzamos comprobando si existe correlación entre las variables:
+
+```{r,echo=F}
+cor(datos_pca)
+```
+
+El contraste de esfericidad de Bartlett permite comprobar si las correlaciones son distintas de 0 de modo significativo. La hip?tesis nula es que det(R)=1. La función "cortest.bartlett" del paquete "pysch" realiza este test. Esta función trabaja con datos normalizados.
+
+```{r, echo=F}
+library(psych)
+# Se normalizan los datos
+datos_normalizados<-scale(datos_pca)
+# Se hace el test de esfericidad
+cortest.bartlett(cor(datos_normalizados))
+```
+Para estos datos se obtiene un test significativo de modo que se rechaza la  hipótesis nula y por tanto los datos no están incorrelados. Aún así, seguiremos adelante y si algo no funciona puede deberse a esto.
+
+# Análisis exploratorio de los datos
+
+Como ya hemos imputado los valores perdidos y eliminado los outliers no hace falta repetir el procedimiento.
+
+# Estudio de posibilidad de reducción de la dimensión
+
+Vamos a realizar un análisis de componentes principales (PCA). La función "prcomp" del paquete base de R realiza este análisis.
+
+Pasamos los parámetros "scale" y "center" a TRUE para considerar los datos originales normalizados. Además, el campo "rotation" del objeto PCA es una matriz cuyas columnas son los coeficientes de las componentes principales. Finalmente, en el campo "sdev" del mismo objeto obtenemos la información sobre desviaciones típicas de cada componente principal, proporción de varianza explicada y acumulada.
+
+
+````{r,echo=F}
+PCA<-prcomp(datos_pca, scale=T, center = T)
+PCA$rotation
+PCA$sdev
+summary(PCA)
+
+```
+Representamos ahora la proporción de varianza explicada y acumulada:
+
+```{r, echo=F}
+library("ggplot2")
+
+# El siguiente gr?fico muestra la proporci?n de varianza explicada
+varianza_explicada <- PCA$sdev^2 / sum(PCA$sdev^2)
+ggplot(data = data.frame(varianza_explicada, pc = 1:11),
+       aes(x = pc, y = varianza_explicada, fill=varianza_explicada )) +
+  geom_col(width = 0.3) +
+  scale_y_continuous(limits = c(0,0.6)) + theme_bw() +
+  labs(x = "Componente principal", y= " Proporci?n de varianza explicada")
+
+# El siguiente gr?fico muestra la proporci?n de varianza explicada
+varianza_acum<-cumsum(varianza_explicada)
+ggplot( data = data.frame(varianza_acum, pc = 1:11),
+        aes(x = pc, y = varianza_acum ,fill=varianza_acum )) +
+  geom_col(width = 0.5) +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_bw() +
+  labs(x = "Componente principal",
+       y = "Proporci?n varianza acumulada")
+
+```
+
+Buscamos ahora el número de componentes principales óptimo. En este caso vamos a utilizar la regla de Abdi et al. (2010). Se promedian las varianzas explicadas por la componentes principales y se seleccionan aquellas cuya proporción de  varianza explicada supera la media.
+# En este caso se eligen tan solo cuatro direcciones principales tal y como se puede ver
+# que acumulan casi un 80% de varianza explicada
+
+```{r, echo=F}
+PCA$sdev^2
+mean(PCA$sdev^2)
+```
+En este caso la media es 1, luego se escogerían la primera, segunda y tercera. Esto son, 3 componentes principales. ¿CUANTA VARIANZA EXPLICADA ACUMULAN? TODO
+
+Ahora vamos a representar las componentes principales, realizando una comparativa entre la primera y segunda componente principal analizando  qué variables tienen más peso para la definición de cada componente principal, después entre la primera y la tercera y finalmente entre la segunda y tercera.
+
+```{r, echo=F}
+library("factoextra")
+
+fviz_pca_var(PCA,
+             repel=TRUE,col.var="cos2",
+             legend.title="Distancia")+theme_bw()
+
+fviz_pca_var(PCA,axes=c(1,3),
+             repel=TRUE,col.var="cos2",
+             legend.title="Distancia")+theme_bw()
+
+fviz_pca_var(PCA,axes=c(2,3),
+             repel=TRUE,col.var="cos2",
+             legend.title="Distancia")+theme_bw()
+```
+Es posible también representar las observaciones de los objetos junto con las componentes  principales mediante la orden "contrib" de la función "fviz_pca_ind", así como identificar con colores aquellas observaciones que mayor varianza explican de las componentes principales.
+
+
+```{r, echo=F}
+# Observaciones en la primera y segunda componente principal
+fviz_pca_ind(PCA,col.ind = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel=TRUE,legend.title="Contrib.var")+theme_bw()
+
+# Observaciones en la primera y tercera componente principal
+fviz_pca_ind(PCA,axes=c(1,3),col.ind = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel=TRUE,legend.title="Contrib.var")+theme_bw()
+
+# Observaciones en la segunda y tercera componente principal
+fviz_pca_ind(PCA,axes=c(2,3),col.ind = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel=TRUE,legend.title="Contrib.var")+theme_bw()
+```
+ 
+ Además haremos una representación conjunta de variables y observaciones que relaciona visualmente las posibles relaciones entre las observaciones, las contribuciones de los individuos a las varianzas de las componentes y el peso de las variables en cada componentes principal.
+ 
+```{r, echo=F}
+# Variables y observaciones en las 1?  y 2? componente principal
+fviz_pca(PCA,
+         alpha.ind ="contrib", col.var = "cos2",col.ind="seagreen",
+         gradient.cols = c("#FDF50E", "#FD960E", "#FD1E0E"),
+         repel=TRUE,
+         legend.title="Distancia")+theme_bw()
+
+# Variables y observaciones en las 1?  y 3? componente principal
+fviz_pca(PCA,axes=c(1,3),
+         alpha.ind ="contrib", col.var = "cos2",col.ind="seagreen",
+         gradient.cols = c("#FDF50E", "#FD960E", "#FD1E0E"),
+         repel=TRUE,
+         legend.title="Distancia")+theme_bw()
+
+# Variables y observaciones en las 2  y 3? componente principal
+fviz_pca(PCA,axes=c(2,3),
+         alpha.ind ="contrib", col.var = "cos2",col.ind="seagreen",
+         gradient.cols = c("#FDF50E", "#FD960E", "#FD1E0E"),
+         repel=TRUE,
+         legend.title="Distancia")+theme_bw()
+```
+Por último, ya que el objeto de este estudio es reducir la dimensión de las variables utilizadas, es posible obtener las coordenadas de los datos originales tipificados en el nuevo sistema de referencia. De hecho lo tenemos almacenado desde que utilizamos la función prcomp para crear la variable PCA
+
+```{r,echo=F}
+
+head(PCA$x,n=3)
+```
+
+
+# Reducción de dimensión mediante variables latentes
+
+```{r,echo=F}
+
+
+```
+
+# Análisis de la normalidad multivariante
 
 
 
+# Clasificación
+
+## Mediante análisis discriminante lineal
+
+## Mediante análisis discriminante cuadrático
+
+## Validación
 
 
 
