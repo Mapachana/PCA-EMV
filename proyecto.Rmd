@@ -397,16 +397,16 @@ PREGUNTAR QUE HAGO YO CON ESTOOOOOOO
 La homocedasticidad se debe comparar dentro de una misma variable, para dos o mas grupos diferenciados; en el caso de este dataset, podemos comprobar si existe homocedasticidad entre los grupos definidos por la religión Católica y Musulmana (los dos grupos mas frecuentes, puesto que de los otros hay tan pocos que podrían dar conclusiones equivocadas) que profesa cada país.
 
 ```{r,echo=F}
-ind<-which(datos_enteros$relig=="Musulma."|datos_enteros$relig=="Católica")
-factores<-datos_enteros$relig[ind]
+#ind<-which(datos_enteros$relig=="Musulma."|datos_enteros$relig=="Católica")
+#factores<-datos_enteros$relig[ind]
 #Como se han eliminado los valores outlier, usamos con centro la media en vez de la mediana
 #H0:homocedasticidad
-apply(datos_pca[ind,], 2, function(x){
-  if(leveneTest(x,as.factor(factores),center=mean)$"Pr(>F)"[1]>0.05){
-    "Existe homocedasticidad entre los grupos"
-  }
-  else{"No existe homocedasticidad entre los grupos"}
-  })
+#apply(datos_pca[ind,], 2, function(x){
+#  if(leveneTest(x,as.factor(factores),center=mean)$"Pr(>F)"[1]>0.05){
+#    "Existe homocedasticidad entre los grupos"
+#  }
+#  else{"No existe homocedasticidad entre los grupos"}
+#  })
 ```
 
 Vemos como para la mayoría de variables, seccionando los paises según religión, se tiene la misma varianza. Donde no se cumple es para el índice de **alfabetización**, **Calorías**, **Log-PIB**, **Densidad de población** y **Log-densidad de población**  (podría deberse a que muchos paises musulmanes se encuentran en el continente Africano, donde de por si muchas de esas variables son significativamente diferentes al resto del mundo.). 
@@ -574,10 +574,77 @@ head(PCA$x,n=3)
 
 # Reducción de dimensión mediante variables latentes
 
-```{r,echo=F}
+Como ya hemos comprobado las correlaciones y test de esfericidad anteriormente, nos saltaremos ese paso.
 
+Vamos a comparar las salidas con el método del factor principal y con el de máxima verosimilitud.
+
+```{r, echo=F}
+library("polycor")
+
+poly_cor<-hetcor(datos_pca)$correlations
+
+modelo1<-fa(poly_cor,
+            nfactors = 3,
+            rotate = "none",
+            fm="mle") # modelo máxima verosimilitud
+
+modelo2<-fa(poly_cor,
+            nfactors = 3,
+            rotate = "none",
+            fm="minres") # modelo minimo residuo
 
 ```
+
+Comenzamos comparando las comunalidades:
+
+```{r, echo=F}
+# Comparacion comunalidades
+sort(modelo1$communality,decreasing = T)->c1
+sort(modelo2$communality,decreasing = T)->c2
+head(cbind(c1,c2))
+```
+Ahora comparamos las unicidades, es decir la proporción de varianza que no ha sido explicada por el factor (1-comunalidad)
+
+```{r, echo=F}
+sort(modelo1$uniquenesses,decreasing = T)->u1
+sort(modelo2$uniquenesses,decreasing = T)->u2
+head(cbind(u1,u2))
+```
+Determinemos ahora el número óptimo de factores.
+Hay diferentes criterios, entre los que destacan el Scree plot (Cattel 1966) y el análisis paralelo (Horn 1965).
+
+```{r, echo=F}
+scree(poly_cor)
+fa.parallel(poly_cor,n.obs=200,fa="fa",fm="minres")
+```
+
+Se deduce que el número óptimo de factores es 3, como ya vimos en el apartado anterior.
+
+Estimamos el modelo factorial con 3 factores implementando una rotacion tipo varimax para buscar una interpretación más simple y mostramos la matriz de pesos factorial rotada.
+
+```{r, echo=F}
+modelo_varimax<-fa(poly_cor,nfactors = 2,rotate = "varimax",
+                   fa="mle")
+print(modelo_varimax$loadings,cut=0) 
+```
+
+Para verlo más claro vamos a representarlo:
+
+```{r, echo=F}
+fa.diagram(modelo_varimax)
+```
+En este diagrama se ve que el primer factor está asociado con ZPSERVI, ZPAGRICU, ZPOBURB, ZESPVIDA, ZTMINFAN, ZTLIBROP y ZTMEDICO. mientras la segunda es con ZTPOBACT y ZTENERGI y la última con ZTEJERCI.
+
+Finalmente comprobamos que en efecto el número de factores elegido es suficiente.
+
+```{r,echo=F}
+library(stats)
+factanal(datos_pca,factors=3, rotation="none")
+
+```
+
+Con ese p-valor para cierto nivel de confianza se acepta la hipótesis y por tanto el número de factores es suficiente.
+
 
 # Análisis de la normalidad multivariante
 
