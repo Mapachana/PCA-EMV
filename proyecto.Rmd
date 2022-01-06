@@ -372,7 +372,7 @@ Así comprobamos que hemos eliminado los outliers.
 
 ### Normalidad
 
-Para poder aplicar ciertas técnicas estadísticas, es importante saber si estamos tratando con variables normales, para ello usaremos el método gráfico *qq-plot*.
+Para poder aplicar ciertas técnicas estadísticas, es importante saber si estamos tratando con variables normales, para ello usaremos el método gráfico *qqplot*.
 
 ```{r,echo=F}
 par(mar=c(1,1,1,1))
@@ -648,11 +648,63 @@ Con ese p-valor para cierto nivel de confianza se acepta la hipótesis y por tan
 
 # Análisis de la normalidad multivariante
 
+A continuación hacemos una exploración gráfica de la normalidad de las distribuciones individuales de nuestros predictores representando los histogramas y los gráficos qqplot.
 
+Como en el apartado univariante ya hemos comprobado la normalidad de cada una de las variables no vamos a repetirlo.
+
+El paquete MVN contiene funciones que permiten realizar los tres test que se utilizan habitualmente para contrastar la normalidad multivariante.
+Esta normalidad multivariante puede verse afectada por la presencia de outliers. En este paquete también encontramos funciones para el análisis de outliers.
+
+```{r}
+library(MVN)
+outliers <- mvn(data = datos_pca, mvnTest = "hz", multivariateOutlierMethod = "quan")
+```
+
+Se detectan 11 outliers en las observaciones. Aunque considerar outliers en 11 observaciones de 33 puede deberse a la falta de datos, y más cuando los outliers ya se eliminaron varios en el análisis univariante. Sin embargo solo de los dos test realizados a continuación encuentran evidencias al 5% de significación de falta de normalidad multivariante.
+
+```{r}
+
+royston_test <- mvn(data = datos_pca, mvnTest = "royston", multivariatePlot = "qq")
+
+royston_test$multivariateNormality
+
+hz_test <- mvn(data = datos_pca, mvnTest = "hz")
+hz_test$multivariateNormality
+
+```
+
+Pese a que uno de los test ha rechazado que siga una normal multivariante, vamos a hacerle caso al otro test y seguir, ya que probablemente esto se deba al bajo tamaño de observaciones con el que contamos y en el gráfico los valores no se alejan demasiado de la recta.
 
 # Clasificación
 
+Como acabamos de comprobar la noramlidad multivariante y ya habíamos comprobado la univariante, solo falta la homogeneidad de la varianza.
+
+## Homogeneidad de la varianza
+
+Usaremos el test de Box M, que es una extensión del de Barttlet para escenarios multivariantes. Hay que tener en cuenta que es muy sensible a que los datos efectivamente se distribuyan según una normal multivariante. Por este motivo se recomienda utilizar una significación (p-value) <0.001.
+
+La hipóstesis nula a contrastar es la de igualdad de matrices de covarianzas en todos los grupos.
+
+```{r}
+library(biotools)
+datos_enteros<-read.spss("DB_3.sav", to.data.frame = TRUE)
+datos_enteros[15:34,1]<-"china"
+datos_enteros[1:15,1]<-"aa"
+datos_enteros$PAIS <- as.factor(datos_enteros$PAIS)
+col_names <- names(datos_enteros[,2:12])
+# to do it for some names in a vector named 'col_names'
+datos_enteros[col_names] <- lapply(datos_enteros[col_names] , as.double)
+datos_enteros[,1]
+boxM(data = datos_enteros[, 2:12], grouping = datos_enteros[, 1])
+```
+
+En este caso no rechazamos la hipótesis nula ya que **p-value = 0.132 > 0.001** y por tanto **asumimos la homogeneidad de varianzas**.
+Es importante recordar que para que esta **conclusión sea fiable** debe darse el supuesto de **normalidad multivariante**.
+
 ## Mediante análisis discriminante lineal
+
+
+
 
 ## Mediante análisis discriminante cuadrático
 
