@@ -392,24 +392,38 @@ En este caso no tomaremos medidas para obtener normalidad en los datos.
 
 ### Homocedasticidad
 
-PREGUNTAR QUE HAGO YO CON ESTOOOOOOO
+La homocedasticidad se debe comparar dentro de una misma variable, para dos o mas grupos diferenciados; en el caso de este dataset, podemos comprobar si existe homocedasticidad entre los grupos definidos por sus continentes.
 
-La homocedasticidad se debe comparar dentro de una misma variable, para dos o mas grupos diferenciados; en el caso de este dataset, podemos comprobar si existe homocedasticidad entre los grupos definidos por la religión Católica y Musulmana (los dos grupos mas frecuentes, puesto que de los otros hay tan pocos que podrían dar conclusiones equivocadas) que profesa cada país.
+Comenzamos añadiendo a los datos completos la variable continente:
 
 ```{r,echo=F}
-#ind<-which(datos_enteros$relig=="Musulma."|datos_enteros$relig=="Católica")
-#factores<-datos_enteros$relig[ind]
-#Como se han eliminado los valores outlier, usamos con centro la media en vez de la mediana
-#H0:homocedasticidad
-#apply(datos_pca[ind,], 2, function(x){
-#  if(leveneTest(x,as.factor(factores),center=mean)$"Pr(>F)"[1]>0.05){
-#    "Existe homocedasticidad entre los grupos"
-#  }
-#  else{"No existe homocedasticidad entre los grupos"}
-#  })
+datos_enteros$continente <- c(
+  "africa", "africa", "america", "oceania",
+  "america", "america", "america", "asia",
+  "asia", "africa", "europa", "asia", 
+  "europa", "europa", "asia", "asia",
+  "asia", "asia", "europa", "asia", "asia",
+  "africa", "america", "africa", "asia", "europa",
+  "europa", "europa", "europa", "europa",
+  "europa", "asia", "america", "asia")
 ```
 
-Vemos como para la mayoría de variables, seccionando los paises según religión, se tiene la misma varianza. Donde no se cumple es para el índice de **alfabetización**, **Calorías**, **Log-PIB**, **Densidad de población** y **Log-densidad de población**  (podría deberse a que muchos paises musulmanes se encuentran en el continente Africano, donde de por si muchas de esas variables son significativamente diferentes al resto del mundo.). 
+Comprobamos ahora la homocedasticidad:
+
+```{r,echo=F}
+ind<-which(datos_enteros$continente=="europa"|datos_enteros$continente=="asia"|datos_enteros$continente=="africa")
+factores<-datos_enteros$continente[ind]
+#Como se han eliminado los valores outlier, usamos con centro la media en vez de la mediana
+#H0:homocedasticidad
+apply(datos_pca[ind,], 2, function(x){
+  if(leveneTest(x,as.factor(factores),center=median)$"Pr(>F)"[1]>0.05){
+    "Existe homocedasticidad entre los grupos"
+  }
+  else{"No existe homocedasticidad entre los grupos"}
+  })
+```
+
+Vemos como para la mayoría de variables, seccionando los paises según continente, se tiene la misma varianza. Donde no se cumple es para el índice de ZESPVIDA y ZPOBURB. 
 
 \newpage
 
@@ -703,19 +717,148 @@ Es importante recordar que para que esta **conclusión sea fiable** debe darse e
 
 ## Mediante análisis discriminante lineal
 
+La función lda del paquete MASS realiza la clasificación.
 
+```{r}
+library(MASS)
+
+modelo_lda <- lda(formula = continente ~ ZPOBDENS + ZTMINFAN, data = datos_enteros[,-1])
+modelo_lda
+```
+
+La salida de este objeto, nos muestra las probabilidades a priori de cada grupo.
+
+Ahora podemos realizar predicciones:
+
+```{r, echo=F}
+nuevas_observaciones <- data.frame(ZPOBDENS = -0.5, ZTMINFAN = 0.7)
+predict(object = modelo_lda, newdata = nuevas_observaciones)
+```
+### Validación
+
+```{r}
+library(biotools)
+
+pred <- predict(modelo_lda, dimen = 1)
+confusionmatrix(datos_enteros$continente, pred$class)
+
+# Porcentaje de errores de clasificación
+trainig_error <- mean(datos_enteros$continente != pred$class) * 100
+paste("trainig_error=", trainig_error, "%")
+```
+El error con los datos de training es del 52%, lo cuál es bastante alto.
 
 
 ## Mediante análisis discriminante cuadrático
 
-## Validación
+Realizamos ahora análogamente para el modelo cuadrático.
 
+```{r}
+library(MASS)
 
+modelo_qda <- qda(formula = continente ~ ZPOBDENS + ZTMINFAN, data = datos_enteros[,-1])
+modelo_qda
+```
 
+La salida de este objeto, nos muestra las probabilidades a priori de cada grupo.
 
+Ahora podemos realizar predicciones:
 
+```{r, echo=F}
+nuevas_observaciones <- data.frame(ZPOBDENS = -0.5, ZTMINFAN = 0.7)
+predict(object = modelo_qda, newdata = nuevas_observaciones)
+```
 
+### Validación
 
+```{r}
+library(biotools)
+
+pred <- predict(modelo_qda, dimen = 1)
+confusionmatrix(datos_enteros$continente, pred$class)
+
+# Porcentaje de errores de clasificación
+trainig_error <- mean(datos_enteros$continente != pred$class) * 100
+paste("trainig_error=", trainig_error, "%")
+```
+El error con los datos de training es 
+
+# Clustering
+
+```{r, echo=F}
+library(tidyverse)
+library(cluster)
+library(factoextra)
+```
+
+Vamos a realizar clustering aplicando kmeans, un método no jerárquico de agrupamiento bastante robusto.
+
+CREO QUE YA ESTAN NORMALIZADOS Y ESTO NO HACE FALTA TODO
+
+Como ya hemos tratado los valores perdidos y outliers vamos simplemente a normalizar los datos:
+
+```{r, echo=F}
+# Para evitar que el análisis cluster se vea influido por cualquier variable arbitraria se estandarizan los datos
+datos_pca<-scale(datos_pca)
+head(datos_pca)
+```
+
+Aplicamos ahora clustering con 4 clusters:
+```{r}
+k4 <- kmeans(datos_pca, centers = 4, nstart = 25)
+str(k4)
+```
+
+La salida que proporciona la función kmeans es una lista de información, de la que destacan las siguientes:
+
+* *cluster*: es un vector de enteros, de 1 a K, que indica el cluster en el que ha sido ubicado cada observación.
+* *centers*: una matriz con los sucesivos centros de los clusters.
+* *totss*: la suma total de cuadrados.
+* *withinss*: vector de suma de cuadrados dentro del cluster (un componente por cluster).
+* *tot.withinss*: suma total de cuadrados dentro de conglomerados, i.e. sum(withinss).
+* *betweens*: suma de cuadrados entre grupos, i.e. totss-tot.withinss.
+* *size*: el número de observaciones en cada cluster.
+
+```{r}
+k4
+```
+
+Al mostrar la variable k4 se ve como las agrupaciones dieron como resultado tamaños realtivamente equilibrados (6, 15, 7 y 6). También se ven los centros de cada grupo (medias) en todas las variables. Y por último la asignación de grupo para cada observación por ejemplo, africasu se asignó al 3, Argelia al 1, etc.
+
+Una forma visual de resumir los resultados de forma elegante y con una interpretación directa es mediante el uso de la función *fviz_cluster*.
+
+```{r}
+fviz_cluster(k4,data=datos_pca)
+```
+
+Apreciamos que los clusters 1 y 4 se solapan entre ellos ligeramente, aunque puede ser culpa de la proyección. También parece que el cluster 4 está formado por varios outliers, mientras los otros parecen más compactos.
+
+## Buscando el número óptimo de clusters
+
+Buscamos el número de clusters que maximice la similaridad intracluster y minimice la similaridad intercluster. Como kmeans recibe como argumento el número de clusters a realizar, debemos buscar nosotros cuál será el mejor número de clusters.
+
+Para ello vamos a usar el Método de Silhouette, ya que se basa en la medida de calidad de agrupamiento Silhouette, que es ampliamente utilizada. El número óptimo de clusters según este enfoque es, de entre un rango de valores posibles para k, aquel que maximiza la silueta promedio.
+
+```{r}
+set.seed(123)
+
+fviz_nbclust(datos_pca, kmeans, method = "silhouette")
+```
+
+Vemos un pico considerable en el valor 2, lo que parece razonable ya que contamos con pocos datos. Repetimos ahora el clustering realizado antes fijando como número de clusters 2.
+
+```{r}
+k2 <- kmeans(datos_pca, centers = 2, nstart = 123)
+str(k2)
+
+k2
+
+fviz_cluster(k2,data=datos_pca)
+```
+
+Observamos al realizar esta agrupación dos clusters bien diferenciados, que no se solapan y de tamaños casi idénticos (18 y 16).
+
+Además los centros no parecen demasiado influenciados por algún valor concreto (outlier). También destaca como las medias de las variables en cada cluster están muy diferenciadas, ya que en todas ellas una tiene media postiva y la otra negativa, de forma que se comprueba que en efecto los valores de cada variable (y más en conjunto) son muy diferentes entre los clusters.
 
 
 
