@@ -748,6 +748,17 @@ paste("trainig_error=", trainig_error, "%")
 ```
 El error con los datos de training es del 52%, lo cuál es bastante alto.
 
+### Visualización
+
+```{r,echo=F}
+library(klaR)
+continente <- datos_enteros$continente
+continente <- as.factor(continente)
+partimat(continente ~ ZPOBDENS + ZTMINFAN,
+         data = datos_pca, method = "lda", prec = 200,
+         col.mean = "firebrick",nplots.vert =1, nplots.hor=3)
+```
+
 
 ## Mediante análisis discriminante cuadrático
 
@@ -782,6 +793,16 @@ trainig_error <- mean(datos_enteros$continente != pred$class) * 100
 paste("trainig_error=", trainig_error, "%")
 ```
 El error con los datos de training es 
+
+### Visualización
+
+```{r, echo=F}
+library(klaR)
+partimat(formula = grupo ~ variable_z + variable_w, data = datos,
+         method = "qda", prec = 400,
+         image.colors = c("darkgoldenrod1", "skyblue2"),
+         col.mean = "firebrick")
+```
 
 # Clustering
 
