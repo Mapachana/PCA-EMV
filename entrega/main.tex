@@ -90,7 +90,7 @@ manychapters,pdfspacing]{classicthesis}
 \usepackage{titling} % Facilita los datos de la portada
 \author{Ana Buendía Ruiz-Azuaga} 
 \date{\today}
-\title{Práctica PCA}
+\title{Práctica evaluable: Aprendiendo de los datos}
 
 % Portada
 \include{imports/titlepage}
@@ -106,11 +106,11 @@ manychapters,pdfspacing]{classicthesis}
 \tableofcontents
 \newpage
 
-\chapter{Práctica PCA}
+\chapter{Práctica}
 
 \section{Abstract}
 
-El problema a estudiar trata sobre información socioeconómica y cultural de treinta y cuatro países, recogida en once variables como número de libros publicados, tasa de consumo energético o densidad de población de cada uno de los ellos. Para ello, se ha realizado un análisis exploratorio univariante, incluyendo estudio de los valores perdidos, un análisis descriptivo numérico clásico y tratado los outliers y comprobado el supuesto de normalidad de cada variable. Asimismo se ha realizado un análisis exploratorio multivariante comprobando los supuestos de correlación con el test de Barlett y los outliers. Además se ha estudiado la posibilidad de reducción de la dimensión mediante variables observables y latentes eligiendo el número óptimo de factores a considerar en cada caso. Finalmente se ha tratado de llevar a cabo varios métodos de aprendizaje supervisado, pero debido a la naturaleza de los datos no se han podido realizar, por lo que se ha usado en su lugar la técnica de aprendizaje no supervisado kmeans para ver similaridades entre países. Tras realizar el estudio se ha observado que los datos son insuficientes y por tanto no se ha obtenido ninguna información concluyente.
+El problema a estudiar trata sobre información socioeconómica y cultural de treinta y cuatro países, recogida en once variables como número de libros publicados, tasa de consumo energético o densidad de población de cada uno de ellos. Para ello, se ha realizado un análisis exploratorio univariante, incluyendo estudio de los valores perdidos, un análisis descriptivo numérico clásico y tratado los outliers y comprobado el supuesto de normalidad de cada variable. Asimismo se ha realizado un análisis exploratorio multivariante comprobando los supuestos de correlación con el test de Barlett y los outliers. Además se ha estudiado la posibilidad de reducción de la dimensión mediante variables observables y latentes eligiendo el número óptimo de factores a considerar en cada caso. Finalmente se ha tratado de llevar a cabo varios métodos de aprendizaje supervisado, pero debido a la naturaleza de los datos no se han podido realizar, por lo que se ha usado en su lugar la técnica de aprendizaje no supervisado kmeans para ver similaridades entre países. Tras realizar el estudio se ha observado que los datos son insuficientes y por tanto no se ha obtenido ninguna información concluyente.
 
 \section{Introducción}
 
@@ -122,9 +122,9 @@ El análisis exploratorio de los datos univariante incluye un estudio de los val
 
 Asimismo se ha realizado un análisis exploratorio multivariante comprobando los supuestos de correlación con el test de Barlett y los outliers respecto a la distribución normal multivariante. Además se ha estudiado la posibilidad de reducción de la dimensión mediante variables observables y latentes intentado obtener el número óptimo de factores a considerar en cada caso.
 
-Al comprender y estudiar la información proporcionada por todas las variables de cada país se quiere construir dos modelos de clasificación, uno lineal y otro cuadrático, para así poder predecir en qué continente se encuentra un país dados los datos ya mencionados. Nos encontraremos problemas al realizar esto por la poca cantidad de datos de la que disponemos, por lo que se hará un agrupamiento no supervisado usando kmeans con el fin de estudiar las similaridades y diferencias que encontramos entre los países, analizando el mejor número de clusters para realizar esta argupación.
+Al comprender y estudiar la información proporcionada por todas las variables de cada país se quiere construir dos modelos de clasificación, uno lineal y otro cuadrático, para así poder predecir en qué continente se encuentra un país dados los datos ya mencionados. Nos encontraremos problemas al realizar esto por la poca cantidad de datos de la que disponemos, por lo que se hará un agrupamiento no supervisado usando kmeans con el fin de estudiar las similaridades y diferencias que encontramos entre los países, analizando el mejor número de clusters para realizar esta agrupación.
 
-Así podremos estudiar las similitudes y diferencias entre los países, apreciando si hay diferencias notables entre países de diferentes continentes, tales como el nivel de desarrollo o los medios de los que dispone la población.
+Así podremos estudiar las similitudes y diferencias entre los países, apreciando si hay diferencias notables entre países de distintos continentes, tales como indicadores de calidad de vida, como su esperanza de vida o tasa de mortalidad infantil.
 
 De esta manera, podremos analizar cuáles son los factores más relevantes que afectan al desarrollo de un país, comprobar si hay relación entre la calidad de vida del país y el continente en el que se encuentra y solamente a partir de estos datos poder, por tanto, predecir a qué continente pertenece un país.
 
@@ -181,13 +181,13 @@ Como primer contacto, en \eqref{tab: metodos} se muestran las variables y su med
 
 Durante el estudio se han usado diversos métodos, entre los que se encuentran para el análisis de datos univariante la exploración descriptiva de cada variable (obteniendo así medidas de centralidad, desviación típica, rango intercuartílico, medidas de skewness, curtosis, asimetría de Yule, asimetría de Kelly y asimetría de Kelly adimensional), exploración gráfica con diagramas de cajas y bigotes para detectar los outliers, sustitución de valores perdidos y outliers por la media, qqplots para comprobar la normalidad y el test de Levene para comprobar la homocedasticidad.
 
-Durante el análisis multivariante se ha usado el test de Barlett, análisis de componentes principales y la regla de Abdi para determinar el número óptimo de sus componentes, así como técnicas gráficas (fviz\_pca\_var, fviz\_pca\_ind y fviz\_pca). También se ha usado el mnétodo del factor principal, método de máxima verosimilitud, scree\_plots, técnicas gráficas para representar la asociación de factores y el test de factanal para comprobar que el número de factores elegido es suficiente. Además se ha usado el chi-square qq-plot para outliers, y para comprobar la normalidad multivariante el test de Royston y de Henze-Zirkler. Para comprobar la homogeneidad de la varianza se ha usado el test de Box-M y clasificación mediante discriminante lineal y cuadrático, así como agrupación por kmeans usando el método de la silueta para determinar el número óptimo de clusters.
+Durante el análisis multivariante se ha usado el test de Barlett, análisis de componentes principales y la regla de Abdi para determinar el número óptimo de sus componentes, así como técnicas gráficas (fviz\_pca\_var, fviz\_pca\_ind y fviz\_pca). También se ha usado el método del factor principal, método de máxima verosimilitud, scree\_plots, técnicas gráficas para representar la asociación de factores y el test de factanal para comprobar que el número de factores elegido es suficiente. Además se ha usado el chi-square qq-plot para outliers, y para comprobar la normalidad multivariante el test de Royston y de Henze-Zirkler. Para comprobar la homogeneidad de la varianza se ha usado el test de Box-M y también se ha usado clasificación mediante discriminante lineal y cuadrático, así como agrupación por kmeans usando el método de la silueta para determinar el número óptimo de clusters.
 
 \section{Resultados}
 
 Primero se ha comprobado la presencia de valores perdidos en el conjunto de datos, pero al no representar más del $5\% $ de datos totales se pueden sustituir por la media sin que esto afecte a los resultados.
 
-No se ha necesitado recodificación ni agrupamiento, y los datos ya estaban estandarizados, luego no ha sido necesario realizar ninguna de estos métodos.
+No se ha necesitado recodificación ni agrupamiento, y los datos ya estaban estandarizados, luego no ha sido necesario realizar ninguno de estos métodos.
 
 Ante la presencia de algunos outliers en cada variable se han reemplazado también por la media, y posteriormente mediante gráficos qqplot se ha comprobado que algunas variables no siguen una distribución normal, mientras otras sí.
 
@@ -209,7 +209,7 @@ Buscamos ahora reducir la dimensión del problema, y para ello se han representa
 \label{fig: varianza_acumulada}
 \end{figure}
 
-En \eqref{fig: varianza_acumulada}se puede ver la proporción de la varianza explicada y en \eqref{fig: varianza_acumulada} la proporción de varianza acumulada.
+En \eqref{fig: varianza_explicada} se puede ver la proporción de la varianza explicada y en \eqref{fig: varianza_acumulada} la proporción de varianza acumulada.
 
 Para estudiar qué variables son más relevantes en peso en cada una de las componentes principales se han representado cada una de ellas.
 
@@ -239,7 +239,7 @@ Como se aprecia en \eqref{fig: pca_12} las variables más relevantes para la pri
 \label{fig: scree_plot}
 \end{figure}
 
-Al realizar la reducción de dimensionalidad mediante variables latentes se ha calculado el número óptimo de componentes mediante scree plots, como \eqref{fig: scree_plot}, y comprobado usando factanal que ese número de componentes es suficiente y 2 no, ya que las funciones usadas para obtener los screeplots a veces devolvían 2 o 3 indistintamente.
+Al realizar la reducción de dimensionalidad mediante variables latentes se ha calculado el número óptimo de componentes mediante scree plots, como \eqref{fig: scree_plot}, resultando este ser 3 y comprobado usando factanal que ese número de componentes es suficiente y 2 no, ya que las funciones usadas para obtener los screeplots a veces devolvían 2 o 3 indistintamente.
 
 \begin{figure}[H]
 \includegraphics[scale=1]{analisis_factorial.pdf}
@@ -276,6 +276,8 @@ Por ello se ha realizado un agrupamiento mediante kmeans usando el método de si
 \label{fig: kmeans}
 \end{figure}
 
+En \eqref{fig: kmeans} se ve el resultado de aplicar clustering con 2 clusters usando el método kmeans.
+
 \section{Discusión}
 
 A la vista de los resultados anteriores queremos averiguar qué variables son más relevantes en el desarrollo de un país y comprobar si hay relación entre los factores socioeconómicos de un país y su continente, tratando de predecir según solamente estos datos a qué continente pertenece cada país.
@@ -284,7 +286,7 @@ Al realizar el análisis de componentes principales se han obtenido $3$ componen
 
 Otro resultado llamativo ha sido el de análisis factorial, ya que en \eqref{fig: analisis_factorial} la variable ZTPOBDENS no está asociada a ningún factor, lo que puede ser resultado de que su correlación con todas las demás variables y por tanto los factores es muy baja.
 
-Asimismo, al estudiar los outliers como vimos en \eqref{fig: outliers} muchos datos se consideran outliers, pero esto no parece razonable ya que los outliers de cada variable se sustituyeron previamente por la media y considera casi un tercio de los datos outliers. Por tanto, parece razonable asumir que los datos en realidad no son outliers y este resultado atípico, así como que el test de Royston rechace que los datos siguen una distribución normal multivariante mientras el test de Henze-Zirkler asume normalidad se pueden deber a que la muestra de datos es muy pequeña. Esto también se ha podido apreciar cuando no se pudo comprobar la homogeneidad de la varianza o construir el modelo de clasificación mediante discriminanet cuadrático por el mismo motivo.
+Asimismo, al estudiar los outliers como vimos en \eqref{fig: outliers} muchos datos se consideran outliers, pero esto no parece razonable ya que los outliers de cada variable se sustituyeron previamente por la media y considera casi un tercio de los datos outliers. Por tanto, parece razonable asumir que los datos en realidad no son outliers y este resultado atípico, así como que el test de Royston rechace que los datos siguen una distribución normal multivariante mientras el test de Henze-Zirkler asume normalidad se pueden deber a que la muestra de datos es muy pequeña. Esto también se ha podido apreciar cuando no se pudo comprobar la homogeneidad de la varianza o construir el modelo de clasificación mediante discriminante cuadrático por el mismo motivo.
 
 Otra posible causa de considerar tantas instancias como outlier es el rango de las variables, pues todas se encuentran cerca del intervalo [0,1].
 
@@ -294,7 +296,7 @@ Dado que el clasificador mediante discriminante lineal no ha proporcionado buen 
 
 Al estudiar el número óptimo de clusters \eqref{fig: silhouette} se aprecia que la máxima separabilidad se encuentra en 2 clusters, mientras que hay 5 continentes, lo que podría implicar que realmente no afecta tanto el continente al que se pertenezca, si no otros factores.
 
-Al realizar el agrupamiento como se ve en \eqref{fig: kmeans} los clusters resultantes no se superponen en su proyección y las diferencias entre las medias de cada una de las variables estudiadas para cada clusters son muy distintas. Aún así, dada la aleatoriedad del algoritmo kmeans y los pocos datos de los que se dispone, no se podría asegurar que los clusters realizados sean representativos, pues se necesitarían más datos. 
+Al realizar el agrupamiento como se ve en \eqref{fig: kmeans} los clusters resultantes no se superponen en su proyección y las diferencias entre las medias de cada una de las variables estudiadas para cada cluster son muy distintas. Aún así, dada la aleatoriedad del algoritmo kmeans y los pocos datos de los que se dispone, no se podría asegurar que los clusters realizados sean representativos, pues se necesitarían más datos. 
 
 \section{Conclusión}
 
